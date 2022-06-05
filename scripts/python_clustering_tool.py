@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 class PythonClusteringTool:
     
     # data info
-    directory = r'C:\Users\ku_sk\Documents\Python Scripts\data_clustering_tool\sample_data'
+    directory = r'C:\Users\ku_sk\Documents\Python Scripts\python_clustering_tool\sample_data\small_data'
     target_col = 'data'
     skip_row = 0
     # clustering 
@@ -29,8 +29,8 @@ class PythonClusteringTool:
     
     dataset = []
 
-    def __init__(self, setup=True):
-        if setup:
+    def __init__(self, init=True):
+        if init:
             print('File Directory Path:')
             self.directory = input()
             print('Target Column Name:')
