@@ -2,10 +2,10 @@
 
 ## Overview
 Py-CT(Python Clustering Tool)は時系列データのクラスタリングツールです。  
-同一フォルダ内にいろんなパターンのデータ（.csv）が混ざっている場合に自動で分別してくれるツールを目指しています。
+フォルダ内の時系列データ（.csv）をクラスタリング結果に基づいて自動分別するツールを目指しています。
 
 Py-CT (Python Clustering Tool) is a time series data clustering tool.  
-It aims to be a tool that automatically separates data with multiple patterns (.csv) mixed in the same folder.
+I'm aiming for a tool that automatically sorts time-series data (.csv) in folders based on clustering results.
 
 ## Features
 
