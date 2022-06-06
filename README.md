@@ -24,6 +24,11 @@ It aims to be a tool that automatically separates data with multiple patterns (*
 - [small_data](https://github.com/qoopen0815/python_clustering_tool/tree/main/sample_data/small_data)
 <img src="https://user-images.githubusercontent.com/26988372/172048017-8c19fe3d-7e52-4272-b542-249a902d0ab1.png" width="70%"/>
 
+## Requirement
+
+- tslearn       ※時系列クラスタリング用
+- matplotlib    ※クラスタリング結果表示
+
 ## Reference
 
 - [telearnを使って気象データをクラスタリングしてみる](https://zenn.dev/kinonotofu/articles/a7cb8038bb2433#dynamic-time-warping%EF%BC%88dtw%E3%80%81%E5%8B%95%E7%9A%84%E6%99%82%E9%96%93%E4%BC%B8%E7%B8%AE%E6%B3%95%EF%BC%89)
