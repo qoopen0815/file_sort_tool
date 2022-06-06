@@ -1,4 +1,4 @@
-![messageImage_1654395019679](https://user-images.githubusercontent.com/26988372/172039328-ac3a83a1-4783-4481-b53a-a0ef0576bae6.jpg)
+![LOGO](.images/logo.png)
 
 ## Overview
 Py-CT(Python Clustering Tool)は時系列データのクラスタリングツールです。  
