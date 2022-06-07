@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 import shutil
+import sys
 
 from tslearn.clustering import KShape
 from tslearn.clustering import TimeSeriesKMeans
@@ -20,8 +21,8 @@ import matplotlib.pyplot as plt
 class PythonClusteringTool:
     
     # data info
-    directory = r'C:\Users\ku_sk\Documents\Python Scripts\data_clustering_tool\sample_data'
-    target_col = 'data'
+    directory = ''
+    target_col = ''
     skip_row = 0
     # clustering 
     cluster_num = 2
@@ -29,26 +30,76 @@ class PythonClusteringTool:
     
     dataset = []
 
-    def __init__(self, setup=True):
-        if setup:
-            print('File Directory Path:')
-            self.directory = input()
-            print('Target Column Name:')
-            self.target_col = input()
-            print('Skip Row Num:')
-            self.skip_row = int(input())
-            print('Clustering Method:')
-            self.method = input()
-            print('Quantity of Data Type:')
-            self.cluster_num = int(input())
+    def __init__(self, init=True):
+        if init:
+            self.set_param()
         else:
             pass
     
-    def check_file_exist(self) -> bool:
-        num = len(glob.glob(self.directory + '\\*.csv'))
-        if num == 0:
+    def set_param(self):
+        print('')
+
+        # input dir path
+        print('CSVファイルの格納先を入力')
+        self.directory = input('-> ')
+        if not self.check_directory(self.directory):
+            return self.set_param()
+        print('')
+        
+        # input target column name
+        print('対象データの列名を入力')
+        self.target_col = input('->')
+        print('')
+        
+        # input skip row num
+        print('スキップすべき行数を入力 （※先頭行は列名として処理されます）')
+        self.skip_row = int(input('->'))
+        print('')
+        
+        # input clustering method
+        tmp = {'1': 'DTW', '2': 'K-Shape'}
+        print('使用するクラスタリング手法を選択 (1: DTW, 2: K-Shape)')
+        num = input('->')
+        if not num=='1' or num=='2':
+            print('Error: You must input 1~2. Please retry.', file=sys.stderr)
+            return self.set_param()
+        self.method = tmp[num]
+        print('')
+        
+        # input cluster num
+        print('データに含まれるクラスタの数を入力 （0: 自動入力）')
+        self.cluster_num = int(input('->'))
+        print('')
+        
+        print('------- Check Parameter -------')
+        print('ファイル格納先： {}'.format(self.directory))
+        print('対象列名: {}'.format(self.target_col))
+        print('スキップ行数： {}'.format(self.skip_row))
+        print('クラスタリング手法： {}'.format(self.method))
+        print('クラスタ数： {}'.format(self.cluster_num))
+        print('')
+        print('Parameter is OK ?')
+        if not self.ask_yes_or_no():
+            return self.set_param()
+        
+    
+    def ask_yes_or_no(self) -> bool:
+        ans = input('yes[Y]/no[N] -> ')
+        if ans.lower()=='yes' or ans.lower()=='y':
+            return True
+        elif ans.lower()=='no' or ans.lower()=='n':
             return False
         else:
+            self.ask_yes_or_no()
+        
+    
+    def check_directory(self, path: str) -> bool:
+        num = len(glob.glob(path + '\\*.csv'))
+        if num == 0:
+            print('Error: CSV file is not found.', file=sys.stderr)
+            return False
+        else:
+            print('{} files exist.'.format(num))
             return True
 
     def load_csv(self, path: str, skip=0) -> pd.DataFrame:
@@ -70,13 +121,13 @@ class PythonClusteringTool:
             for i, ts in enumerate(ts_list):
                 len_add = len_max - len(ts)
                 ts_list[i] = ts + [ts[-1]] * len_add   # Fill in missing elements with last value.
-            return np.array(ts_list, dtype='float32')
+            return np.array(ts_list)
         
         def transform_vector(ts_array: np.array) -> np.array:
             # Convert to vector
             stack_list = []
             for j in range(len(ts_array)):
-                data = np.array(ts_array[j], dtype='float32')
+                data = np.array(ts_array[j])
                 data = data.reshape((1, len(data))).T
                 stack_list.append(data)
             #一次元配列にする
@@ -87,6 +138,8 @@ class PythonClusteringTool:
         ts_vector = transform_vector(ts_array)
         return ts_vector
 
+class ClusteringMethod:
+    
     def clustering_by_dtw(self, data: np.array, cluster: int, random_seed: int) -> list:
         km_dtw = TimeSeriesKMeans(n_clusters=cluster, random_state=random_seed, metric='dtw')
         y_pred = km_dtw.fit_predict(data.astype(np.float32))
@@ -122,16 +175,14 @@ class PythonClusteringTool:
         plt.show()
         return y_pred
 
-    def estimate_cluster_num(self, data: np.array, random_seed: int, max_cluster: int):
+    def estimate_cluster_num(self, data: np.array, random_seed: int, max_cluster: int) -> int:
         distortions = []
-        
-        #1~10クラスタまで計算 
         for i  in range(1,max_cluster+1):
             ks = KShape(n_clusters=i, n_init=10, verbose=True, random_state=random_seed)   #クラスタリングの計算を実行
-            ks.fit(data)                                                        #ks.fitするとks.inertia_が得られる
+            ks.fit(data)    #ks.fitするとks.inertia_が得られる
             distortions.append(ks.inertia_)
             
-        plt.plot(range(1,11), distortions, marker='o')
+        plt.plot(range(1,max_cluster+1), distortions, marker='o')
         plt.xlabel('Number of clusters')
         plt.ylabel('Distortion')
         plt.show()
@@ -139,7 +190,8 @@ class PythonClusteringTool:
 
 if __name__ == '__main__':
     
-    pct = PythonClusteringTool(False)
+    pct = PythonClusteringTool()
+    cm = ClusteringMethod()
     
     # Create data set
     paths = sorted(glob.glob(pct.directory + '\\*.csv'))
@@ -156,9 +208,9 @@ if __name__ == '__main__':
     
     # Clustering
     if pct.method == 'DTW':         # DTW(Dynamic Time Warping)
-        result = pct.clustering_by_dtw(pct.dataset, pct.cluster_num, seed)
+        result = cm.clustering_by_dtw(pct.dataset, pct.cluster_num, seed)
     elif pct.method == 'K-Shape':    # K-Shape
-        result = pct.clustering_by_kshape(pct.dataset, pct.cluster_num, seed)
+        result = cm.clustering_by_kshape(pct.dataset, pct.cluster_num, seed)
     
     # Move files based on clustering results.
     for index, path in enumerate(paths):
