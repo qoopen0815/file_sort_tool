@@ -49,3 +49,4 @@ pyinstaller .\python_clustering_tool.spec --clean --noconfirm
 
 - [telearnを使って気象データをクラスタリングしてみる](https://zenn.dev/kinonotofu/articles/a7cb8038bb2433#dynamic-time-warping%EF%BC%88dtw%E3%80%81%E5%8B%95%E7%9A%84%E6%99%82%E9%96%93%E4%BC%B8%E7%B8%AE%E6%B3%95%EF%BC%89)
 - [Pythonの機械学習ライブラリtslearnを使った時系列データのクラスタリング](https://blog.brains-tech.co.jp/tslearn-time-series-clustering)
+-[DTW(Dynamic Time Warping)動的時間伸縮法](https://data-analysis-stats.jp/%e6%a9%9f%e6%a2%b0%e5%ad%a6%e7%bf%92/dtwdynamic-time-warping%e5%8b%95%e7%9a%84%e6%99%82%e9%96%93%e4%bc%b8%e7%b8%ae%e6%b3%95/)
