@@ -5,10 +5,14 @@ Created on Sun Jun  5 15:14:12 2022
 """
 
 import glob
+from importlib.resources import path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from fastdtw import fastdtw
+from sklearn.metrics import r2_score
 from tslearn.clustering import TimeSeriesKMeans
 from tslearn.preprocessing import TimeSeriesScalerMeanVariance
 
@@ -17,18 +21,34 @@ class DynamicTimeWarping:
     def __init__(self) -> None:
         pass
     
-    def sort_by_dtw(self, data: np.array, cluster: int, random_seed: int) -> list:
-        km_dtw = TimeSeriesKMeans(n_clusters=cluster, random_state=random_seed, metric='dtw')
-        labels = km_dtw.fit_predict(data)
+    def get_distance(self, ref: list, data: list, show_plot=False):
+        distance, path = fastdtw(ref, data)
+        
+        if show_plot:
+            plt.plot(ref, label="ref_data")
+            plt.plot(data, label="input_data")
+            for ref_x, input_x in path:
+                plt.plot(
+                    [ref_x, input_x],
+                    [ref[ref_x], data[input_x]],
+                    color='gray',
+                    linestyle='dotted',
+                    linewidth=1
+                )
+            plt.legend()
+            plt.show()
+        
+        return distance
+    
+    def get_sort_result(self, dataset: np.array, cluster: int,
+                        seed=0, metric='dtw') -> list:
+        km_dtw = TimeSeriesKMeans(n_clusters=cluster, random_state=seed, 
+                                  metric=metric)
+        labels = km_dtw.fit_predict(dataset)
         return (labels, km_dtw)
-    
-    def sort_by_softdtw(self, data: np.array, cluster: int, random_seed: int) -> list:
-        km_softdtw = TimeSeriesKMeans(n_clusters=cluster, random_state=random_seed, metric='softdtw')
-        labels = km_softdtw.fit_predict(data)
-        return (labels, km_softdtw)
 
-if __name__ == '__main__':
-    
+
+def main():
     dtw = DynamicTimeWarping()
     
     # Create data set
@@ -74,4 +94,16 @@ if __name__ == '__main__':
     dataset = TimeSeriesScalerMeanVariance(mu=0.0, std=1.0).fit_transform(dataset)
     result = dtw.sort_by_dtw(dataset, 2, seed)
     print('end')
+
+
+def main2():
+    dtw = DynamicTimeWarping()
+    paths = sorted(glob.glob('C:\\Users\\ku_ge\\Documents\\GitHub\\python_clustering_tool\\sample_data\\small_data\\*.csv'))
+    ref = pd.read_csv(paths[0])['data'].to_list()
+    data = pd.read_csv(paths[3])['data'].to_list()
+    dist = dtw.get_distance(ref, data, True)
+    print(dist)
     
+
+if __name__ == '__main__':
+    main2()
