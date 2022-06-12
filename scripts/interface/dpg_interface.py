@@ -5,6 +5,7 @@ Created on Fri Jun  3 19:02:53 2022
 TODO: Estimate the optimal number of clusters by Elbow method.
 '''
 
+import os
 import glob
 from dataclasses import dataclass
 
@@ -400,6 +401,16 @@ class DpgInterface(object):
         # Window上のlistboxを更新
         self._update_item_listbox()
         
+        # 出力用のフォルダを作成
+        os.makedirs(
+            name=self._target_dir_path_ + '\\match_files',
+            exist_ok=True
+        )
+        os.makedirs(
+            name=self._target_dir_path_ + '\\mismatch_files',
+            exist_ok=True
+        )
+            
         # 設定画面を閉じる
         dpg.configure_item(
             'general_settings',
@@ -453,8 +464,8 @@ class DpgInterface(object):
         )
         tmp = self._target_data_dict_.copy()
         
-        # Referenceデータとの類似度評価 -> 閾値以下ならmatch_item
         for key in tmp.keys():
+            # Referenceデータとの類似度評価
             individual_progress(
                 progress=float(2/individual_step),
                 message='check distance'
@@ -467,6 +478,7 @@ class DpgInterface(object):
             if self._use_debug_print:
                 print('file: {}, dist: {}'.format(tmp[key].file, dist))
             
+            # ファイル移動
             individual_progress(
                 progress=float(3/individual_step),
                 message='move file'
