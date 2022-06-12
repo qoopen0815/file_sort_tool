@@ -38,7 +38,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='main',
+    name='File Sort Tool',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
