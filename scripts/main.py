@@ -21,7 +21,7 @@ def main():
     
     # DearPyGui準備(コンテキスト生成、セットアップ、ビューポート生成)
     dpg_width = 700
-    dpg_height =500
+    dpg_height =520
 
     print('**** DearPyGui Setup ****')
     dpg.create_context()
@@ -35,8 +35,8 @@ def main():
     # デフォルトフォント変更
     with dpg.font_registry():
         with dpg.font(
-            # 'scripts/interface/font/YasashisaAntiqueFont/07YasashisaAntique.otf',
-            resource_path('07YasashisaAntique.otf'),  # <- pyinstaller用
+            'scripts/interface/font/YasashisaAntiqueFont/07YasashisaAntique.otf',
+            # resource_path('07YasashisaAntique.otf'),  # <- pyinstaller用
             13,
         ) as default_font:
             dpg.add_font_range_hint(dpg.mvFontRangeHint_Japanese)

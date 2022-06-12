@@ -21,10 +21,10 @@ class DynamicTimeWarping:
     def __init__(self) -> None:
         pass
     
-    def get_distance(self, ref: list, data: list, show_plot=False):
+    def get_distance(self, ref: list, data: list, plot=False):
         distance, path = fastdtw(ref, data)
         
-        if show_plot:
+        if plot:
             plt.plot(ref, label="ref_data")
             plt.plot(data, label="input_data")
             for ref_x, input_x in path:

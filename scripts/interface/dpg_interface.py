@@ -6,14 +6,20 @@ TODO: Estimate the optimal number of clusters by Elbow method.
 '''
 
 import glob
-import os
-import shutil
+from dataclasses import dataclass
 
 import dearpygui.dearpygui as dpg
 import pandas as pd
 from clustering_tools.dynamic_time_warping import DynamicTimeWarping
 
 import interface.utils
+
+
+@dataclass
+class TimeSeriesData:
+    file: str
+    path: str
+    data: list
 
 class DpgInterface(object):
 
@@ -26,24 +32,24 @@ class DpgInterface(object):
     _terminate_flag = False
     _use_debug_print = False
     
-    _file_list = {
-        'src': [],
-        'ok': [],
-        'ng': []
-    }
+    _ref_data_ = TimeSeriesData(
+        file='',
+        path='',
+        data=[]
+    )
+    _target_dir_path_ = ''
+    _target_data_dict_ = {}
+    _match_data_dict_ = {}
+    _mismatch_data_dict_ = {}
     
-    _ref_data = []
-    _ref_path = ''
     _dtw = DynamicTimeWarping()
     
     # 入力データ設定
-    ref_file = ''
-    directory_path = ''
-    col_name = ''
-    skip_row = 0
+    _col_name = ''
+    _skip_row = 0
     
     # ソート設定
-    distance_threshold = 30.0
+    _distance_threshold = 30.0
     
     # 自動処理モード用設定
     
@@ -94,7 +100,7 @@ class DpgInterface(object):
         ):
             # メニューバー生成
             with dpg.menu_bar(label='MenuBar'):
-                with dpg.menu(label='Configuration'):
+                with dpg.menu(label='Menu'):
                     dpg.add_menu_item(
                         tag='general_config',
                         label='General Settings',
@@ -111,56 +117,62 @@ class DpgInterface(object):
                             show=True,
                         )
                     )
-                    # dpg.add_menu_item(
-                    #     tag='automate_config',
-                    #     label='Automate Settings',
-                    #     callback=lambda: dpg.configure_item(
-                    #         'about_me',
-                    #         show=True,
-                    #     )
-                    # )
-                with dpg.menu(label='About'):
-                    dpg.add_menu_item(
-                        tag='About_Me',
-                        label='Info',
-                        callback=lambda: dpg.configure_item(
-                            'information',
-                            show=True,
-                        )
-                    )
-
+                    
             with dpg.group():
                 with dpg.group(horizontal=True):
-                    with dpg.child_window(label='Source Items',
-                                          tag='src_items_window',
-                                          width=width/2 - 10,
-                                          height=height - 65):
-                        dpg.add_text('Input Files:')
-                        
+                    with dpg.child_window(
+                        width=width/2 - 10,
+                        height=height - 85
+                    ):
+                        dpg.add_text('Target Items:')
+                        dpg.add_listbox(
+                            items=[self._target_data_dict_[key].file for key in self._target_data_dict_.keys()],
+                            tag='target_item_list',
+                            width=width/2 - 30,
+                            num_items=20
+                        )
+                            
                     with dpg.group():
                         with dpg.child_window(width=width/2 - 15,
-                                            height=height/2 - 35):
-                            dpg.add_text('Hit Items')
-                            
+                                              height=height/2 - 45):
+                            dpg.add_text('Match Items')
+                            dpg.add_listbox(
+                                items=[self._match_data_dict_[key].file for key in self._match_data_dict_.keys()],
+                                tag='match_item_list',
+                                width=width/2 - 30,
+                                num_items=8
+                            )
                         with dpg.child_window(width=width/2 - 15,
-                                            height=height/2 - 35):
-                            dpg.add_text('Non Hit Items')
-                            
+                                              height=height/2 - 45):
+                            dpg.add_text('Mismatch Items')
+                            dpg.add_listbox(
+                                items=[self._mismatch_data_dict_[key].file for key in self._mismatch_data_dict_.keys()],
+                                tag='mismatch_item_list',
+                                width=width/2 - 30,
+                                num_items=8
+                            )
                 
                 with dpg.group(horizontal=True):
                     dpg.add_button(
                         label='Run',
                         tag='run_button',
                         width=70,
+                        height=42,
                         callback=self._callback_push_run
                     )
-                    dpg.add_progress_bar(
-                        label='Progress Bar',
-                        tag='progress_bar',
-                        width=580,
-                        default_value=0.0,
-                        overlay='0%'
-                    )
+                    with dpg.group():
+                        dpg.add_progress_bar(
+                            tag='individual_progress',
+                            width=583,
+                            default_value=0.0,
+                            overlay='0.0%: '
+                        )
+                        dpg.add_progress_bar(
+                            tag='overall_progress',
+                            width=583,
+                            default_value=0.0,
+                            overlay='0.0%'
+                        )
 
             ## 隠しておくウィンドウ
             with dpg.window(
@@ -187,7 +199,7 @@ class DpgInterface(object):
                             )
                         )
                     dpg.add_text(
-                        '-> ' + self.ref_file,
+                        '-> ' + self._ref_data_.file,
                         tag='show_ref_file'
                     )
                     with dpg.group(horizontal=True):
@@ -202,7 +214,7 @@ class DpgInterface(object):
                             )
                         )
                     dpg.add_text(
-                        '-> ' + self.directory_path,
+                        '-> ' + self._target_dir_path_,
                         tag='show_directory_path'
                     )
                     with dpg.group(horizontal=True):
@@ -211,9 +223,9 @@ class DpgInterface(object):
                         )
                         dpg.add_combo(
                             tag='col_list',
-                            default_value=self.col_name,
+                            default_value=self._col_name,
                             width=100,
-                            callback=lambda sender, data: setattr(self, 'col_name', data)
+                            callback=lambda sender, data: setattr(self, '_col_name', data)
                         )
                     with dpg.group(horizontal=True):
                         dpg.add_text(
@@ -221,9 +233,9 @@ class DpgInterface(object):
                         )
                         dpg.add_input_int(
                             tag='skip_row',
-                            default_value=self.skip_row,
+                            default_value=self._skip_row,
                             width=100,
-                            callback=lambda sender, data: setattr(self, 'skip_row', data)
+                            callback=lambda sender, data: setattr(self, '_skip_row', data)
                         )
                 
                 with dpg.group(horizontal=True):
@@ -249,9 +261,9 @@ class DpgInterface(object):
                             'Distance Threshold:'
                         )
                         dpg.add_input_float(
-                            default_value=self.distance_threshold,
+                            default_value=self._distance_threshold,
                             width=100,
-                            callback=lambda sender, data: setattr(self, 'distance_threshold', data)
+                            callback=lambda sender, data: setattr(self, '_distance_threshold', data)
                         )
                     
             with dpg.window(
@@ -305,21 +317,23 @@ class DpgInterface(object):
             True
         )
 
-    def _callback_close_window(self, sender):
+    def _callback_close_window(self, sender, app_data):
         dpg.delete_item(sender)
 
-    def _callback_open_file(self, sender, data):
-        if data['file_name'] != '.':
-            # CSVファイルから読み込み
+    def _callback_open_file(self, sender, app_data):
+        if app_data['file_name'] != '.':
+            
+            # ファイル情報を保存
+            self._ref_data_.file = app_data['file_name']
+            self._ref_data_.path = app_data['file_path_name']
+            
+            # CSVファイルのデータから列名リストを取り出してcol_listを更新
             df = pd.read_csv(
-                data['file_path_name'],
+                app_data['file_path_name'],
                 index_col=None,
-                header=0, 
-                skiprows=self.skip_row
+                header=0,
+                skiprows=self._skip_row
             )
-            self.ref_file = data['file_name']
-            self._ref_path = data['file_path_name']
-            # col_listを更新
             cols = list(df)
             dpg.configure_item(
                 'col_list',
@@ -328,7 +342,7 @@ class DpgInterface(object):
             )
             dpg.configure_item(
                 'show_ref_file',
-                default_value='-> ' + data['file_name']
+                default_value='-> ' + self._ref_data_.file
             )
             # # データサイズが大きい場合は警告
             # dpg.configure_item('import_caution', show=True)
@@ -336,36 +350,59 @@ class DpgInterface(object):
         if self._use_debug_print:
             print('**** _callback_open_file ****')
             print('- sender:    ' + str(sender))
-            print('- data:      ' + str(data))
+            print('- data:      ' + str(app_data))
             print('- loaded:    ')
-            print(self._ref_path)
+            print(df.describe())
             print()
             
-    def _callback_open_directory(self, sender, data):
-        if data['file_name'] != '.':
-            self.directory_path = data['file_path_name']
+    def _callback_open_directory(self, sender, app_data):
+        if app_data['file_name'] != '.':
+            self._target_dir_path_ = app_data['file_path_name']
+            item = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
             dpg.configure_item(
                 'show_directory_path',
-                default_value='-> ' + self.directory_path
+                default_value='-> {} files exist.'.format(len(item))
             )
 
         if self._use_debug_print:
             print('**** _callback_open_directory ****')
             print('- sender:    ' + str(sender))
-            print('- data:      ' + str(data))
+            print('- data:      ' + str(app_data))
             print('- loaded:    ')
-            print(self.directory_path)
+            print(self._target_dir_path_)
             print()
 
-    def _callback_save_general_configuration(self, sender, data):
-        if os.path.exists(self._ref_path):
+    def _callback_save_general_configuration(self, sender, app_data):
+        
+        # Referenceデータを読込
+        df = pd.read_csv(
+            self._ref_data_.path,
+            index_col=None,
+            header=0, 
+            skiprows=self._skip_row
+        )
+        self._ref_data_.data = df[self._col_name].to_list().copy()
+        
+        # Targetデータを読込
+        file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
+        for file_path in file_path_list:
             df = pd.read_csv(
-                self._ref_path,
+                file_path,
                 index_col=None,
                 header=0, 
-                skiprows=self.skip_row
+                skiprows=self._skip_row
             )
-            self._ref_data = df[self.col_name].to_list()
+            data = TimeSeriesData(
+                file=file_path.replace(self._target_dir_path_ + '\\', ''),
+                path=file_path,
+                data=df[self._col_name].to_list()
+            )
+            self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
+        
+        # Window上のlistboxを更新
+        self._update_item_listbox()
+        
+        # 設定画面を閉じる
         dpg.configure_item(
             'general_settings',
             show=False,
@@ -373,49 +410,97 @@ class DpgInterface(object):
         
         if self._use_debug_print:
             print('**** General Configuration ****')
-            print('- ref_data:       {} datas'.format(len(self._ref_data)))
-            print('- directory_path: {} files'.format(self.directory_path))
-            print('- col_name:       {}'.format(self.col_name))
-            print('- skip_row:       {}'.format(self.skip_row))
+            print('- ref_data:       {} datas'.format(len(self._ref_data_.file)))
+            print('- Target File: {} files exist.'.format(len(self._target_data_dict_.keys())))
+            print('- col_name:       {}'.format(self._col_name))
+            print('- skip_row:       {}'.format(self._skip_row))
             print()
+            
+    def _callback_push_run(self, sender, app_data):
+        self._sort_file()
     
-    def _callback_push_run(self, sender, data):
-        self._sort_files()
+    def _update_item_listbox(self):
+        dpg.configure_item(
+            'target_item_list',
+            items=[self._target_data_dict_[key].file for key in self._target_data_dict_.keys()]
+        )
+        dpg.configure_item(
+            'match_item_list',
+            items=[self._match_data_dict_[key].file for key in self._match_data_dict_.keys()]
+        )
+        dpg.configure_item(
+            'mismatch_item_list',
+            items=[self._mismatch_data_dict_[key].file for key in self._mismatch_data_dict_.keys()]
+        )
+        pass
     
-    def _sort_files(self):
-        self._file_list['src'] = sorted(glob.glob(self.directory_path + '\\*.csv'))
-        self._file_list['ok'].clear()
-        self._file_list['ng'].clear()
+    def _sort_file(self):
         
-        tmp = self._file_list['src'].copy()
-        file_num = len(tmp)
-        for index, file in enumerate(tmp):
-            target = pd.read_csv(file)[self.col_name].to_list()       
-            dist = self._dtw.get_distance(self._ref_data, target, False)
-            print('{} -> dist: {}'.format(index, dist))
-            if dist < self.distance_threshold:
-                self._file_list['ok'].append(file)
-                # interface.utils.move_file(
-                #     src=file,
-                #     dst=file.replace(
-                #         self.directory_path,
-                #         self.directory_path + '\\hits'
-                #     )
-                # )
-            else:
-                self._file_list['ng'].append(file)
-                # interface.utils.move_file(
-                #     src=file,
-                #     dst=file.replace(
-                #         self.directory_path,
-                #         self.directory_path + '\\outlier'
-                #     )
-                # )
-            self._file_list['src'].remove(file)
-            progress = float((index+1)/file_num)
+        def individual_progress(progress:float, message:str=''):
             dpg.configure_item(
-                'progress_bar',
+                'individual_progress',
                 default_value=progress,
-                overlay='{}%'.format(progress*100)
+                overlay='{:.1f}%: {}'.format(progress*100, message)
             )
-    
+        
+        # progress表示用
+        individual_progress(0.0)
+        overall_step = len(self._target_data_dict_)
+        individual_step = 4
+        
+        # 作業用dictコピー
+        individual_progress(
+            progress=float(1/individual_step),
+            message='load data'
+        )
+        tmp = self._target_data_dict_.copy()
+        
+        # Referenceデータとの類似度評価 -> 閾値以下ならmatch_item
+        for key in tmp.keys():
+            individual_progress(
+                progress=float(2/individual_step),
+                message='check distance'
+            )
+            dist = self._dtw.get_distance(
+                ref=self._ref_data_.data,
+                data=tmp[key].data,
+                plot=False
+            )
+            if self._use_debug_print:
+                print('file: {}, dist: {}'.format(tmp[key].file, dist))
+            
+            individual_progress(
+                progress=float(3/individual_step),
+                message='move file'
+            )
+            if dist <= self._distance_threshold:
+                self._match_data_dict_[key] = self._target_data_dict_.pop(key)
+                interface.utils.move_file(
+                    src=self._match_data_dict_[key].path,
+                    dst=self._match_data_dict_[key].path.replace(
+                        self._target_dir_path_,
+                        self._target_dir_path_ + '\\match_files'
+                    )
+                )
+            else:
+                self._mismatch_data_dict_[key] = self._target_data_dict_.pop(key)
+                interface.utils.move_file(
+                    src=self._mismatch_data_dict_[key].path,
+                    dst=self._mismatch_data_dict_[key].path.replace(
+                        self._target_dir_path_,
+                        self._target_dir_path_ + '\\mismatch_files'
+                    )
+                )
+            self._update_item_listbox()
+            
+            individual_progress(
+                progress=float(4/individual_step),
+                message='done'
+            )
+            overall_progress = float((overall_step - len(self._target_data_dict_))/overall_step)
+            dpg.configure_item(
+                'overall_progress',
+                default_value=overall_progress,
+                overlay='{:.1f}%'.format(overall_progress*100)
+            )
+        
