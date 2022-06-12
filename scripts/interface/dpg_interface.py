@@ -311,7 +311,7 @@ class DpgInterface(object):
                     )
                     
         dpg.set_primary_window(
-            self._tool_tag + 'Window',
+            self._tool_tag + '_window',
             True
         )
 
