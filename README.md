@@ -24,7 +24,7 @@ DTWとは時系列データ同士の距離・類似度を測る際に用いる�
 ### Run Py-CT
 
 ```bash
-python .\main.py
+python .\scripts\main.py 
 ```
 
 ### Pyinstaller
