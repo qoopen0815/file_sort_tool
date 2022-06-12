@@ -18,6 +18,9 @@ DTWとは時系列データ同士の距離・類似度を測る際に用いる�
 
 ## Requirement
 
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 
