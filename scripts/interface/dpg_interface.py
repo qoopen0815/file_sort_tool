@@ -30,15 +30,15 @@ class DpgInterface(object):
     _process_flag = False
     _use_debug_print = False
     
-    _ref_data_ = TimeSeriesData(
+    _ref_data = TimeSeriesData(
         file='',
         path='',
         data=[]
     )
-    _target_dir_path_ = ''
-    _target_data_dict_ = {}
-    _match_data_dict_ = {}
-    _mismatch_data_dict_ = {}
+    _target_dir_path = ''
+    _target_data_dict = {}
+    _match_data_dict = {}
+    _mismatch_data_dict = {}
     
     _dtw = DynamicTimeWarping()
     
@@ -118,7 +118,7 @@ class DpgInterface(object):
                     ):
                         dpg.add_text('Target Items:')
                         dpg.add_listbox(
-                            items=[self._target_data_dict_[key].file for key in self._target_data_dict_.keys()],
+                            items=[self._target_data_dict[key].file for key in self._target_data_dict.keys()],
                             tag='target_item_list',
                             width=width/2 - 30,
                             num_items=20
@@ -129,7 +129,7 @@ class DpgInterface(object):
                                               height=height/2 - 45):
                             dpg.add_text('Match Items')
                             dpg.add_listbox(
-                                items=[self._match_data_dict_[key].file for key in self._match_data_dict_.keys()],
+                                items=[self._match_data_dict[key].file for key in self._match_data_dict.keys()],
                                 tag='match_item_list',
                                 width=width/2 - 30,
                                 num_items=8
@@ -138,7 +138,7 @@ class DpgInterface(object):
                                               height=height/2 - 45):
                             dpg.add_text('Mismatch Items')
                             dpg.add_listbox(
-                                items=[self._mismatch_data_dict_[key].file for key in self._mismatch_data_dict_.keys()],
+                                items=[self._mismatch_data_dict[key].file for key in self._mismatch_data_dict.keys()],
                                 tag='mismatch_item_list',
                                 width=width/2 - 30,
                                 num_items=8
@@ -198,7 +198,7 @@ class DpgInterface(object):
                                 )
                             )
                         dpg.add_text(
-                            '-> ' + self._ref_data_.file,
+                            '-> ' + self._ref_data.file,
                             tag='show_ref_file'
                         )
                         
@@ -216,7 +216,7 @@ class DpgInterface(object):
                                 )
                             )
                         dpg.add_text(
-                            '-> ' + self._target_dir_path_,
+                            '-> ' + self._target_dir_path,
                             tag='show_directory_path'
                         )
                         
@@ -304,8 +304,8 @@ class DpgInterface(object):
         if app_data['file_name'] != '.':
             
             # ファイル情報を保存
-            self._ref_data_.file = app_data['file_name']
-            self._ref_data_.path = app_data['file_path_name']
+            self._ref_data.file = app_data['file_name']
+            self._ref_data.path = app_data['file_path_name']
             
             # CSVファイルのデータから列名リストを取り出してcol_listを更新
             df = pd.read_csv(
@@ -322,7 +322,7 @@ class DpgInterface(object):
             )
             dpg.configure_item(
                 'show_ref_file',
-                default_value='-> ' + self._ref_data_.file
+                default_value='-> ' + self._ref_data.file
             )
             # # データサイズが大きい場合は警告
             # dpg.configure_item('import_caution', show=True)
@@ -337,8 +337,8 @@ class DpgInterface(object):
             
     def _callback_open_directory(self, sender, app_data):
         if app_data['file_name'] != '.':
-            self._target_dir_path_ = app_data['file_path_name']
-            item = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
+            self._target_dir_path = app_data['file_path_name']
+            item = sorted(glob.glob(self._target_dir_path + '\\*.csv'))
             dpg.configure_item(
                 'show_directory_path',
                 default_value='-> {} files exist.'.format(len(item))
@@ -349,22 +349,22 @@ class DpgInterface(object):
             print('- sender:    ' + str(sender))
             print('- data:      ' + str(app_data))
             print('- loaded:    ')
-            print(self._target_dir_path_)
+            print(self._target_dir_path)
             print()
 
     def _callback_save_general_configuration(self, sender, app_data):
         
         # Referenceデータを読込
         df = pd.read_csv(
-            self._ref_data_.path,
+            self._ref_data.path,
             index_col=None,
             header=0, 
             skiprows=self._skip_row
         )
-        self._ref_data_.data = df[self._col_name].to_list().copy()
+        self._ref_data.data = df[self._col_name].to_list().copy()
         
         # Targetデータを読込
-        file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
+        file_path_list = sorted(glob.glob(self._target_dir_path + '\\*.csv'))
         for file_path in file_path_list:
             df = pd.read_csv(
                 file_path,
@@ -373,22 +373,22 @@ class DpgInterface(object):
                 skiprows=self._skip_row
             )
             data = TimeSeriesData(
-                file=file_path.replace(self._target_dir_path_ + '\\', ''),
+                file=file_path.replace(self._target_dir_path + '\\', ''),
                 path=file_path,
                 data=df[self._col_name].to_list()
             )
-            self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
+            self._target_data_dict[data.file.lower().replace('.csv', '')] = data
         
         # Window上のlistboxを更新
         self._update_item_listbox()
         
         # 出力用のフォルダを作成
         os.makedirs(
-            name=self._target_dir_path_ + '\\match_files',
+            name=self._target_dir_path + '\\match_files',
             exist_ok=True
         )
         os.makedirs(
-            name=self._target_dir_path_ + '\\mismatch_files',
+            name=self._target_dir_path + '\\mismatch_files',
             exist_ok=True
         )
             
@@ -400,8 +400,8 @@ class DpgInterface(object):
         
         if self._use_debug_print:
             print('**** General Configuration ****')
-            print('- ref_data:       {} datas'.format(len(self._ref_data_.file)))
-            print('- Target File: {} files exist.'.format(len(self._target_data_dict_.keys())))
+            print('- ref_data:       {} datas'.format(len(self._ref_data.file)))
+            print('- Target File: {} files exist.'.format(len(self._target_data_dict.keys())))
             print('- col_name:       {}'.format(self._col_name))
             print('- skip_row:       {}'.format(self._skip_row))
             print()
@@ -415,15 +415,15 @@ class DpgInterface(object):
     def _update_item_listbox(self):
         dpg.configure_item(
             'target_item_list',
-            items=[self._target_data_dict_[key].file for key in self._target_data_dict_.keys()]
+            items=[self._target_data_dict[key].file for key in self._target_data_dict.keys()]
         )
         dpg.configure_item(
             'match_item_list',
-            items=[self._match_data_dict_[key].file for key in self._match_data_dict_.keys()]
+            items=[self._match_data_dict[key].file for key in self._match_data_dict.keys()]
         )
         dpg.configure_item(
             'mismatch_item_list',
-            items=[self._mismatch_data_dict_[key].file for key in self._mismatch_data_dict_.keys()]
+            items=[self._mismatch_data_dict[key].file for key in self._mismatch_data_dict.keys()]
         )
 
     def _sort_file(self):
@@ -437,7 +437,7 @@ class DpgInterface(object):
         
         # progress表示用
         individual_progress(0.0)
-        overall_step = len(self._target_data_dict_)
+        overall_step = len(self._target_data_dict)
         individual_step = 4
         
         # 作業用dictコピー
@@ -445,7 +445,7 @@ class DpgInterface(object):
             progress=float(1/individual_step),
             message='load data'
         )
-        tmp = self._target_data_dict_.copy()
+        tmp = self._target_data_dict.copy()
         
         for key in tmp.keys():
             # Referenceデータとの類似度評価
@@ -454,7 +454,7 @@ class DpgInterface(object):
                 message='check distance'
             )
             dist = self._dtw.get_distance(
-                ref=self._ref_data_.data,
+                ref=self._ref_data.data,
                 data=tmp[key].data,
                 plot=False
             )
@@ -467,21 +467,21 @@ class DpgInterface(object):
                 message='move file'
             )
             if dist <= self._distance_threshold:
-                self._match_data_dict_[key] = self._target_data_dict_.pop(key)
+                self._match_data_dict[key] = self._target_data_dict.pop(key)
                 shutil.move(
-                    src=self._match_data_dict_[key].path,
-                    dst=self._match_data_dict_[key].path.replace(
-                        self._target_dir_path_,
-                        self._target_dir_path_ + '\\match_files'
+                    src=self._match_data_dict[key].path,
+                    dst=self._match_data_dict[key].path.replace(
+                        self._target_dir_path,
+                        self._target_dir_path + '\\match_files'
                     )
                 )
             else:
-                self._mismatch_data_dict_[key] = self._target_data_dict_.pop(key)
+                self._mismatch_data_dict[key] = self._target_data_dict.pop(key)
                 shutil.move(
-                    src=self._mismatch_data_dict_[key].path,
-                    dst=self._mismatch_data_dict_[key].path.replace(
-                        self._target_dir_path_,
-                        self._target_dir_path_ + '\\mismatch_files'
+                    src=self._mismatch_data_dict[key].path,
+                    dst=self._mismatch_data_dict[key].path.replace(
+                        self._target_dir_path,
+                        self._target_dir_path + '\\mismatch_files'
                     )
                 )
             self._update_item_listbox()
@@ -491,7 +491,7 @@ class DpgInterface(object):
                 progress=float(4/individual_step),
                 message='done'
             )
-            overall_progress = float((overall_step - len(self._target_data_dict_))/overall_step)
+            overall_progress = float((overall_step - len(self._target_data_dict))/overall_step)
             dpg.configure_item(
                 'overall_progress',
                 default_value=overall_progress,
