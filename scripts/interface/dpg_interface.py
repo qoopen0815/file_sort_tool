@@ -25,9 +25,8 @@ class DpgInterface(object):
 
     _ver = '0.0.1'
 
-    _tool_tag = 'Tool'
+    _tool_tag = 'file_sort_tool'
     _tool_label = 'FileSortingTool'
-    _tool_id = 0
 
     _terminate_flag = False
     _use_debug_print = False
@@ -61,7 +60,6 @@ class DpgInterface(object):
         use_debug_print=False
     ):
         # 各種初期化
-        self._tool_id = 0
         self._use_debug_print = use_debug_print
 
         # ファイルダイアログ設定
@@ -89,7 +87,7 @@ class DpgInterface(object):
 
         # メインウィンドウ生成
         with dpg.window(
-            tag=self._tool_tag + 'Window',
+            tag=self._tool_tag + '_window',
             label=self._tool_label,
             width=width,
             height=height,
