@@ -54,9 +54,6 @@ def main():
     # メインループ
     print('**** Start Main Event Loop ****')
     dpg.start_dearpygui()
-    # while dpg.is_dearpygui_running():
-    #     # 処理内容
-    #     dpg.render_dearpygui_frame()
 
     # 終了処理
     print('**** Terminate process ****')

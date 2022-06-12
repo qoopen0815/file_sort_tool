@@ -2,18 +2,16 @@
 '''
 Created on Fri Jun  3 19:02:53 2022
 @author: ku_sk
-TODO: Estimate the optimal number of clusters by Elbow method.
 '''
 
-import os
 import glob
+import os
+import shutil
 from dataclasses import dataclass
 
 import dearpygui.dearpygui as dpg
 import pandas as pd
 from clustering_tools.dynamic_time_warping import DynamicTimeWarping
-
-import interface.utils
 
 
 @dataclass
@@ -29,7 +27,7 @@ class DpgInterface(object):
     _tool_tag = 'file_sort_tool'
     _tool_label = 'FileSortingTool'
 
-    _terminate_flag = False
+    _process_flag = False
     _use_debug_print = False
     
     _ref_data_ = TimeSeriesData(
@@ -53,7 +51,7 @@ class DpgInterface(object):
     
     # 自動処理モード用設定
     
-
+    
     def __init__(
         self,
         width=1280,
@@ -101,20 +99,15 @@ class DpgInterface(object):
             with dpg.menu_bar(label='MenuBar'):
                 with dpg.menu(label='Menu'):
                     dpg.add_menu_item(
-                        tag='general_config',
-                        label='General Settings',
+                        label='Settings',
                         callback=lambda: dpg.configure_item(
-                            'general_settings',
+                            'tool_settings',
                             show=True,
                         )
                     )
                     dpg.add_menu_item(
-                        tag='sort_config',
-                        label='File Sort Settings',
-                        callback=lambda: dpg.configure_item(
-                            'sort_settings',
-                            show=True,
-                        )
+                        label='Exit',
+                        callback=lambda: dpg.destroy_context()
                     )
                     
             with dpg.group():
@@ -175,117 +168,105 @@ class DpgInterface(object):
 
             ## 隠しておくウィンドウ
             with dpg.window(
-                label='General Settings',
+                label='Tool Settings',
                 modal=False,
                 show=False,
-                id='general_settings',
+                id='tool_settings',
                 no_title_bar=False,
                 no_resize=True,
                 pos=[52,52],
-                width=500,
-                height=200
+                width=550,
+                height=220
             ):
-                with dpg.group():
-                    with dpg.group(horizontal=True):
-                        dpg.add_text(
-                            'Reference File:'
-                        )
-                        dpg.add_button(
-                            label='Open',
-                            callback=lambda: dpg.configure_item(
-                                'open_file',
-                                show=True,
-                            )
-                        )
-                    dpg.add_text(
-                        '-> ' + self._ref_data_.file,
-                        tag='show_ref_file'
-                    )
-                    with dpg.group(horizontal=True):
-                        dpg.add_text(
-                            'Directory Path:'
-                        )
-                        dpg.add_button(
-                            label='Open',
-                            callback=lambda: dpg.configure_item(
-                                'open_directory',
-                                show=True,
-                            )
-                        )
-                    dpg.add_text(
-                        '-> ' + self._target_dir_path_,
-                        tag='show_directory_path'
-                    )
-                    with dpg.group(horizontal=True):
-                        dpg.add_text(
-                            'Target Column Name:'
-                        )
-                        dpg.add_combo(
-                            tag='col_list',
-                            default_value=self._col_name,
-                            width=100,
-                            callback=lambda sender, data: setattr(self, '_col_name', data)
-                        )
-                    with dpg.group(horizontal=True):
-                        dpg.add_text(
-                            'Skip Row Num:'
-                        )
-                        dpg.add_input_int(
-                            tag='skip_row',
-                            default_value=self._skip_row,
-                            width=100,
-                            callback=lambda sender, data: setattr(self, '_skip_row', data)
-                        )
                 
                 with dpg.group(horizontal=True):
-                    dpg.add_button(
-                        label='Save',
-                        callback=self._callback_save_general_configuration
-                    )
-                    
-            with dpg.window(
-                label='Sort Settings',
-                modal=False,
-                show=False,
-                id='sort_settings',
-                no_title_bar=False,
-                no_resize=True,
-                pos=[52,52],
-                width=500,
-                height=200
-            ):
-                with dpg.group():
-                    with dpg.group(horizontal=True):
+                    with dpg.group():
+                        
+                        dpg.add_text('Import Setting')
+                        
+                        # Ref File
+                        with dpg.group(horizontal=True):
+                            dpg.add_text(
+                                'Reference File:',
+                                bullet=True
+                            )
+                            dpg.add_button(
+                                label='Open',
+                                callback=lambda: dpg.configure_item(
+                                    'open_file',
+                                    show=True,
+                                )
+                            )
                         dpg.add_text(
-                            'Distance Threshold:'
+                            '-> ' + self._ref_data_.file,
+                            tag='show_ref_file'
                         )
-                        dpg.add_input_float(
-                            default_value=self._distance_threshold,
-                            width=100,
-                            callback=lambda sender, data: setattr(self, '_distance_threshold', data)
+                        
+                        # Dir Path
+                        with dpg.group(horizontal=True):
+                            dpg.add_text(
+                                'Directory Path:',
+                                bullet=True
+                            )
+                            dpg.add_button(
+                                label='Open',
+                                callback=lambda: dpg.configure_item(
+                                    'open_directory',
+                                    show=True,
+                                )
+                            )
+                        dpg.add_text(
+                            '-> ' + self._target_dir_path_,
+                            tag='show_directory_path'
                         )
+                        
+                        # Col Name
+                        with dpg.group(horizontal=True):
+                            dpg.add_text(
+                                'Target Column Name:',
+                                bullet=True
+                            )
+                            dpg.add_combo(
+                                tag='col_list',
+                                default_value=self._col_name,
+                                width=80,
+                                callback=lambda sender, data: setattr(self, '_col_name', data)
+                            )
+                        
+                        # Skip Num
+                        with dpg.group(horizontal=True):
+                            dpg.add_text(
+                                'Skip Row Num:',
+                                bullet=True
+                            )
+                            dpg.add_input_int(
+                                tag='skip_row',
+                                default_value=self._skip_row,
+                                width=100,
+                                callback=lambda sender, data: setattr(self, '_skip_row', data)
+                            )
                     
-            with dpg.window(
-                label='Info',
-                modal=True,
-                show=False,
-                id='information',
-                no_title_bar=False,
-                pos=[52,52]
-            ):
-                dpg.add_text(
-                    'FileSortingTool is a tool for sorting CSV files \nbased on the clustering results of timeseries data.',
+                    with dpg.group():
+                        
+                        dpg.add_text('Sort Setting')
+                        
+                        # Dist Threshold
+                        with dpg.group(horizontal=True):
+                            dpg.add_text(
+                                'Distance Threshold:',
+                                bullet=True
+                            )
+                            dpg.add_input_float(
+                                default_value=self._distance_threshold,
+                                width=100,
+                                format='%.1f',
+                                callback=lambda sender, data: setattr(self, '_distance_threshold', data)
+                            )
+                    
+                dpg.add_button(
+                    label='Save',
+                    callback=self._callback_save_general_configuration
                 )
-                dpg.add_separator()
-                with dpg.group(horizontal=True):
-                    dpg.add_button(
-                        label='OK',
-                        width=375,
-                        callback=lambda: dpg.configure_item(
-                            'information',
-                            show=False,
-                        ),
-                    )
 
             # インポート制限事項ポップアップ
             #TODO: データ量が大きすぎたら出す
@@ -413,7 +394,7 @@ class DpgInterface(object):
             
         # 設定画面を閉じる
         dpg.configure_item(
-            'general_settings',
+            'tool_settings',
             show=False,
         )
         
@@ -426,7 +407,10 @@ class DpgInterface(object):
             print()
             
     def _callback_push_run(self, sender, app_data):
+        # 実行中に押されても機能しないようにする
+        dpg.configure_item('run_button', enabled=False)
         self._sort_file()
+        dpg.configure_item('run_button', enabled=True)
     
     def _update_item_listbox(self):
         dpg.configure_item(
@@ -441,8 +425,7 @@ class DpgInterface(object):
             'mismatch_item_list',
             items=[self._mismatch_data_dict_[key].file for key in self._mismatch_data_dict_.keys()]
         )
-        pass
-    
+
     def _sort_file(self):
         
         def individual_progress(progress:float, message:str=''):
@@ -485,7 +468,7 @@ class DpgInterface(object):
             )
             if dist <= self._distance_threshold:
                 self._match_data_dict_[key] = self._target_data_dict_.pop(key)
-                interface.utils.move_file(
+                shutil.move(
                     src=self._match_data_dict_[key].path,
                     dst=self._match_data_dict_[key].path.replace(
                         self._target_dir_path_,
@@ -494,7 +477,7 @@ class DpgInterface(object):
                 )
             else:
                 self._mismatch_data_dict_[key] = self._target_data_dict_.pop(key)
-                interface.utils.move_file(
+                shutil.move(
                     src=self._mismatch_data_dict_[key].path,
                     dst=self._mismatch_data_dict_[key].path.replace(
                         self._target_dir_path_,
@@ -503,6 +486,7 @@ class DpgInterface(object):
                 )
             self._update_item_listbox()
             
+            # 終了
             individual_progress(
                 progress=float(4/individual_step),
                 message='done'
