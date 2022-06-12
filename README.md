@@ -24,13 +24,13 @@ DTWとは時系列データ同士の距離・類似度を測る際に用いる�
 ### Run Py-CT
 
 ```bash
-python .\scripts\python_clustering_tool.py
+python .\main.py
 ```
 
 ### Pyinstaller
 
 ```bash
-pyinstaller .\python_clustering_tool.spec --clean --noconfirm
+pyinstaller .\main.spec --clean --noconfirm
 ```
 
 ## Reference
