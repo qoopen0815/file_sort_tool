@@ -24,11 +24,18 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
-a.datas += [(
-    '07YasashisaAntique.otf',
-    '.\\scripts\\interface\\font\\YasashisaAntiqueFont\\07YasashisaAntique.otf',
-    'DATA'
-)]
+a.datas += [
+    (
+        '07YasashisaAntique.otf',
+        '.\\scripts\\interface\\font\\YasashisaAntiqueFont\\07YasashisaAntique.otf',
+        'DATA'
+    ),
+    (
+        'icon.ico',
+        '.\\icon.ico',
+        'DATA'
+    ),
+]
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
