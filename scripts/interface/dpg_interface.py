@@ -263,16 +263,30 @@ class DpgInterface(object):
                                 callback=lambda sender, data: setattr(self, '_distance_threshold', data)
                             )
                     
-                dpg.add_button(
-                    label='Save',
-                    callback=self._callback_save_general_configuration
-                )
+                with dpg.group(horizontal=True):
+                    dpg.add_button(
+                        label='Save',
+                        callback=self._callback_save_general_configuration
+                    )
+                    dpg.add_button(
+                        label='Cancel',
+                        callback=lambda: dpg.configure_item(
+                            item='tool_settings',
+                            show=False
+                        )
+                    )
+                    dpg.add_text(
+                        'Input value is invalid. Please enter the correct value.',
+                        tag='input_caution',
+                        color=(255,0,0),
+                        show=False
+                    )
 
             # インポート制限事項ポップアップ
             #TODO: データ量が大きすぎたら出す
             with dpg.window(
                 label='Delete Files',
-                modal=True,
+                modal=False,
                 show=False,
                 id='import_caution',
                 no_title_bar=True,
@@ -353,58 +367,69 @@ class DpgInterface(object):
             print()
 
     def _callback_save_general_configuration(self, sender, app_data):
-        
-        # Referenceデータを読込
-        df = pd.read_csv(
-            self._ref_data_.path,
-            index_col=None,
-            header=0, 
-            skiprows=self._skip_row
+           
+        dpg.configure_item(
+            item='input_caution',
+            show=False
         )
-        self._ref_data_.data = df[self._col_name].to_list().copy()
         
-        # Targetデータを読込
-        file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
-        for file_path in file_path_list:
+        try:
+            # Referenceデータを読込
             df = pd.read_csv(
-                file_path,
+                self._ref_data_.path,
                 index_col=None,
                 header=0, 
                 skiprows=self._skip_row
             )
-            data = TimeSeriesData(
-                file=file_path.replace(self._target_dir_path_ + '\\', ''),
-                path=file_path,
-                data=df[self._col_name].to_list()
-            )
-            self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
-        
-        # Window上のlistboxを更新
-        self._update_item_listbox()
-        
-        # 出力用のフォルダを作成
-        os.makedirs(
-            name=self._target_dir_path_ + '\\match_files',
-            exist_ok=True
-        )
-        os.makedirs(
-            name=self._target_dir_path_ + '\\mismatch_files',
-            exist_ok=True
-        )
+            self._ref_data_.data = df[self._col_name].to_list().copy()
             
-        # 設定画面を閉じる
-        dpg.configure_item(
-            'tool_settings',
-            show=False,
-        )
-        
-        if self._use_debug_print:
-            print('**** General Configuration ****')
-            print('- ref_data:       {} datas'.format(len(self._ref_data_.file)))
-            print('- Target File: {} files exist.'.format(len(self._target_data_dict_.keys())))
-            print('- col_name:       {}'.format(self._col_name))
-            print('- skip_row:       {}'.format(self._skip_row))
-            print()
+            # Targetデータを読込
+            file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
+            for file_path in file_path_list:
+                df = pd.read_csv(
+                    file_path,
+                    index_col=None,
+                    header=0, 
+                    skiprows=self._skip_row
+                )
+                data = TimeSeriesData(
+                    file=file_path.replace(self._target_dir_path_ + '\\', ''),
+                    path=file_path,
+                    data=df[self._col_name].to_list()
+                )
+                self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
+            
+            # Window上のlistboxを更新
+            self._update_item_listbox()
+            
+            # 出力用のフォルダを作成
+            os.makedirs(
+                name=self._target_dir_path_ + '\\match_files',
+                exist_ok=True
+            )
+            os.makedirs(
+                name=self._target_dir_path_ + '\\mismatch_files',
+                exist_ok=True
+            )
+                
+            # 設定画面を閉じる
+            dpg.configure_item(
+                'tool_settings',
+                show=False,
+            )
+            
+            if self._use_debug_print:
+                print('**** General Configuration ****')
+                print('- ref_data:       {} datas'.format(len(self._ref_data_.file)))
+                print('- Target File: {} files exist.'.format(len(self._target_data_dict_.keys())))
+                print('- col_name:       {}'.format(self._col_name))
+                print('- skip_row:       {}'.format(self._skip_row))
+                print()
+        except:
+            dpg.configure_item(
+                item='input_caution',
+                show=True
+            )
             
     def _callback_push_run(self, sender, app_data):
         # 実行中に押されても機能しないようにする
