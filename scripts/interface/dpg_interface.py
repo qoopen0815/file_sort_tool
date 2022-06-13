@@ -106,6 +106,10 @@ class DpgInterface(object):
                         )
                     )
                     dpg.add_menu_item(
+                        label='PreviewTool',
+                        callback=self._callback_preview_data
+                    )
+                    dpg.add_menu_item(
                         label='Exit',
                         callback=lambda: dpg.destroy_context()
                     )
@@ -263,16 +267,55 @@ class DpgInterface(object):
                                 callback=lambda sender, data: setattr(self, '_distance_threshold', data)
                             )
                     
-                dpg.add_button(
-                    label='Save',
-                    callback=self._callback_save_general_configuration
-                )
+                with dpg.group(horizontal=True):
+                    dpg.add_button(
+                        label='Save',
+                        callback=self._callback_save_general_configuration
+                    )
+                    dpg.add_button(
+                        label='Cancel',
+                        callback=lambda: dpg.configure_item(
+                            item='tool_settings',
+                            show=False
+                        )
+                    )
+                    dpg.add_text(
+                        'Input value is invalid. Please enter the correct value.',
+                        tag='input_caution',
+                        color=(255,0,0),
+                        show=False
+                    )
+
+            # 閾値設定用Preview画面
+            with dpg.window(
+                label='Result Preview',
+                modal=True,
+                show=False,
+                id='preview_window',
+                pos=[20, 20],
+                width=width-40,
+                height=height-40,
+                no_move=True,
+                no_resize=True
+            ):
+                with dpg.plot(
+                    label="Data Preview",
+                    tag='data_preview',
+                    height=250,
+                    width=-1,
+                ):
+                    dpg.add_plot_legend()
+                    dpg.add_plot_axis(
+                        axis=dpg.mvXAxis,
+                        label="x"
+                    )
+                    
 
             # インポート制限事項ポップアップ
             #TODO: データ量が大きすぎたら出す
             with dpg.window(
                 label='Delete Files',
-                modal=True,
+                modal=False,
                 show=False,
                 id='import_caution',
                 no_title_bar=True,
@@ -351,60 +394,106 @@ class DpgInterface(object):
             print('- loaded:    ')
             print(self._target_dir_path)
             print()
+    
+    def _callback_preview_data(self, sender, appdata):
+        
+        
+        dpg.configure_item(
+            item='preview_window',
+            show=True
+        )
+        
+        with dpg.plot_axis(
+            axis=dpg.mvYAxis,
+            label="y",
+            parent='data_preview'
+        ):
+            # series belong to a y axis
+            dpg.add_line_series(
+                x=[i for i in range(len(self._ref_data.data))],
+                y=self._ref_data.data,
+                label="ref_data"
+            )
+        
+        for key in self._target_data_dict.keys():
+            print(key) # sample_data01
+            with dpg.plot_axis(
+                axis=dpg.mvYAxis,
+                label=key,
+                parent='data_preview'
+            ):
+                # series belong to a y axis
+                dpg.add_line_series(
+                    x=[i for i in range(len(self._target_data_dict[key].data))],
+                    y=self._target_data_dict[key].data,
+                    label=key
+                )
 
     def _callback_save_general_configuration(self, sender, app_data):
         
-        # Referenceデータを読込
-        df = pd.read_csv(
-            self._ref_data.path,
-            index_col=None,
-            header=0, 
-            skiprows=self._skip_row
-        )
-        self._ref_data.data = df[self._col_name].to_list().copy()
-        
-        # Targetデータを読込
-        file_path_list = sorted(glob.glob(self._target_dir_path + '\\*.csv'))
-        for file_path in file_path_list:
+        try:        
+            # Referenceデータを読込
             df = pd.read_csv(
-                file_path,
+                self._ref_data.path,
                 index_col=None,
                 header=0, 
                 skiprows=self._skip_row
             )
-            data = TimeSeriesData(
-                file=file_path.replace(self._target_dir_path + '\\', ''),
-                path=file_path,
-                data=df[self._col_name].to_list()
-            )
-            self._target_data_dict[data.file.lower().replace('.csv', '')] = data
-        
-        # Window上のlistboxを更新
-        self._update_item_listbox()
-        
-        # 出力用のフォルダを作成
-        os.makedirs(
-            name=self._target_dir_path + '\\match_files',
-            exist_ok=True
-        )
-        os.makedirs(
-            name=self._target_dir_path + '\\mismatch_files',
-            exist_ok=True
-        )
+            self._ref_data.data = df[self._col_name].to_list().copy()
             
-        # 設定画面を閉じる
-        dpg.configure_item(
-            'tool_settings',
-            show=False,
-        )
-        
-        if self._use_debug_print:
-            print('**** General Configuration ****')
-            print('- ref_data:       {} datas'.format(len(self._ref_data.file)))
-            print('- Target File: {} files exist.'.format(len(self._target_data_dict.keys())))
-            print('- col_name:       {}'.format(self._col_name))
-            print('- skip_row:       {}'.format(self._skip_row))
-            print()
+            # Targetデータを読込
+            file_path_list = sorted(glob.glob(self._target_dir_path + '\\*.csv'))
+            for file_path in file_path_list:
+                df = pd.read_csv(
+                    file_path,
+                    index_col=None,
+                    header=0, 
+                    skiprows=self._skip_row
+                )
+                data = TimeSeriesData(
+                    file=file_path.replace(self._target_dir_path + '\\', ''),
+                    path=file_path,
+                    data=df[self._col_name].to_list()
+                )
+                self._target_data_dict[data.file.lower().replace('.csv', '')] = data
+            
+            # Window上のlistboxを更新
+            self._update_item_listbox()
+            
+            # 出力用のフォルダを作成
+            os.makedirs(
+                name=self._target_dir_path + '\\match_files',
+                exist_ok=True
+            )
+            os.makedirs(
+                name=self._target_dir_path + '\\mismatch_files',
+                exist_ok=True
+            )
+            
+            dpg.configure_item(
+                item='input_caution',
+                show=False
+            )
+                
+            # 設定画面を閉じる
+            dpg.configure_item(
+                'tool_settings',
+                show=False,
+            )
+            
+            if self._use_debug_print:
+                print('**** General Configuration ****')
+                print('- ref_data:       {} datas'.format(len(self._ref_data.file)))
+                print('- Target File: {} files exist.'.format(len(self._target_data_dict.keys())))
+                print('- col_name:       {}'.format(self._col_name))
+                print('- skip_row:       {}'.format(self._skip_row))
+                print()
+        except:
+            dpg.configure_item(
+                item='input_caution',
+                show=True
+            )
+
             
     def _callback_push_run(self, sender, app_data):
         # 実行中に押されても機能しないようにする
