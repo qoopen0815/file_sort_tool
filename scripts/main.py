@@ -22,6 +22,8 @@ def main():
     # DearPyGui準備(コンテキスト生成、セットアップ、ビューポート生成)
     dpg_width = 700
     dpg_height =520
+    dpg_icon = './icon.ico'
+    dpg_font = 'scripts/interface/font/YasashisaAntiqueFont/07YasashisaAntique.otf'
 
     print('**** DearPyGui Setup ****')
     dpg.create_context()
@@ -30,13 +32,15 @@ def main():
         title="File Sort Tool",
         width=dpg_width,
         height=dpg_height,
+        small_icon=dpg_icon,
+        large_icon=dpg_icon,
+        resizable=False
     )
 
     # デフォルトフォント変更
     with dpg.font_registry():
         with dpg.font(
-            'scripts/interface/font/YasashisaAntiqueFont/07YasashisaAntique.otf',
-            # resource_path('07YasashisaAntique.otf'),  # <- pyinstaller用
+            dpg_font,
             13,
         ) as default_font:
             dpg.add_font_range_hint(dpg.mvFontRangeHint_Japanese)
