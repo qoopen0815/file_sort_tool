@@ -408,6 +408,33 @@ class DpgInterface(object):
                 name=self._target_dir_path_ + '\\match_files',
                 exist_ok=True
             )
+            self._ref_data_.data = df[self._col_name].to_list().copy()
+            
+            # Targetデータを読込
+            file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
+            for file_path in file_path_list:
+                df = pd.read_csv(
+                    file_path,
+                    index_col=None,
+                    header=0, 
+                    skiprows=self._skip_row
+                )
+                data = TimeSeriesData(
+                    file=file_path.replace(self._target_dir_path_ + '\\', ''),
+                    path=file_path,
+                    data=df[self._col_name].to_list()
+                )
+                self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
+            
+            # Window上のlistboxを更新
+            self._update_item_listbox()
+            
+            # 出力用のフォルダを作成
+            os.makedirs(
+                name=self._target_dir_path_ + '\\match_files',
+                exist_ok=True
+            )
+
             os.makedirs(
                 name=self._target_dir_path_ + '\\mismatch_files',
                 exist_ok=True
@@ -427,7 +454,6 @@ class DpgInterface(object):
                 print('- skip_row:       {}'.format(self._skip_row))
                 print()
         except:
-            traceback.print_exc()
             dpg.configure_item(
                 item='input_caution',
                 show=True
