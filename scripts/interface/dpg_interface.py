@@ -8,6 +8,7 @@ import glob
 import os
 import shutil
 from dataclasses import dataclass
+import traceback
 
 import dearpygui.dearpygui as dpg
 import pandas as pd
@@ -378,10 +379,11 @@ class DpgInterface(object):
             df = pd.read_csv(
                 self._ref_data_.path,
                 index_col=None,
-                header=0, 
-                skiprows=self._skip_row
+                header=0,
             )
-            self._ref_data_.data = df[self._col_name].to_list().copy()
+            print(df)
+            self._ref_data_.data = df[self._col_name].drop(range(self._skip_row)).to_list()
+            print(self._ref_data_.data)
             
             # Targetデータを読込
             file_path_list = sorted(glob.glob(self._target_dir_path_ + '\\*.csv'))
@@ -389,13 +391,12 @@ class DpgInterface(object):
                 df = pd.read_csv(
                     file_path,
                     index_col=None,
-                    header=0, 
-                    skiprows=self._skip_row
+                    header=0
                 )
                 data = TimeSeriesData(
                     file=file_path.replace(self._target_dir_path_ + '\\', ''),
                     path=file_path,
-                    data=df[self._col_name].to_list()
+                    data=df[self._col_name].drop(range(self._skip_row)).to_list()
                 )
                 self._target_data_dict_[data.file.lower().replace('.csv', '')] = data
             
@@ -426,6 +427,7 @@ class DpgInterface(object):
                 print('- skip_row:       {}'.format(self._skip_row))
                 print()
         except:
+            traceback.print_exc()
             dpg.configure_item(
                 item='input_caution',
                 show=True
