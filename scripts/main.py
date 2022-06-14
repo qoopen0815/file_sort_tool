@@ -24,6 +24,10 @@ def main():
     dpg_height =520
     dpg_icon = './icon.ico'
     dpg_font = 'scripts/interface/font/YasashisaAntiqueFont/07YasashisaAntique.otf'
+    
+    # pyinstallerでビルドするときはコメントアウトを外す 
+    dpg_icon = resource_path('icon.ico')
+    dpg_font = resource_path('07YasashisaAntique.otf')
 
     print('**** DearPyGui Setup ****')
     dpg.create_context()
